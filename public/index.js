@@ -6,6 +6,7 @@ async function runCheck(label, checkFunc) {
     const el = document.createElement('div')
     el.classList.add('check')
     el.textContent = 'Running check: ' + label
+    app.appendChild(el)
     try {
         const result = await checkFunc()
         if (result) {
@@ -15,7 +16,7 @@ async function runCheck(label, checkFunc) {
             el.textContent = 'FAILED CHECK: ' + label
             el.classList.add('fail')
         }
-        app.appendChild(el)
+        
     } catch(e) {
         console.warn(e)
         el.textContent = `ERROR checking ${label}: ` + e
@@ -81,9 +82,6 @@ const runChecks = () => {
     runCheck('Atomics.isLockFree is a function', async () => {
         return typeof Atomics.isLockFree === 'function'
     })
-    runCheck('Atomics.notify is a function', async () => {
-        return typeof Atomics.notify === 'function'
-    })
     runCheck('Atomics.or is a function', async () => {
         return typeof Atomics.or === 'function'
     })
@@ -93,14 +91,40 @@ const runChecks = () => {
     runCheck('Atomics.sub is a function', async () => {
         return typeof Atomics.sub === 'function'
     })
-    runCheck('Atomics.wait is a function', async () => {
-        return typeof Atomics.wait === 'function'
-    })
     runCheck('Atomics.xor is a function', async () => {
         return typeof Atomics.xor === 'function'
     })
     runCheck('Atomics.wake does not exist (it should not)', async () => {
         return typeof Atomics.wake === 'undefined'
+    })
+    runCheck('Worker will wait using Atomics.wait and Atomics.notify', async () => {
+        let started = false
+        const promise = new Promise((resolve, reject) => {
+            const worker = new Worker('worker.js')
+            worker.onmessage = (event) => {
+                console.log(event)
+                if (event.data === 'start') {
+                    started = true
+                } else {
+                    if (started && event.data === 'success') {
+                        resolve(true)
+                    } else {
+                        resolve(false)
+                    }
+                }
+            }
+            const sab = new SharedArrayBuffer(4);
+            const int32 = new Int32Array(sab);
+            worker.postMessage({
+                buffer: sab
+            })
+            setTimeout( () => {
+                Atomics.store(int32, 0, 123)
+                Atomics.notify(int32, 0, 1)
+            }, 2000)
+        })
+        
+        return await promise
     })
 }
 
