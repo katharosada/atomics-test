@@ -1,0 +1,14 @@
+
+
+.check {
+    padding: 10px;
+    margin: 6px
+}
+
+.success {
+    background-color: aquamarine;
+}
+
+.fail {
+    background-color: lightcoral;
+}
